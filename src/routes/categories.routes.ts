@@ -1,38 +1,24 @@
-import { CategoriesRepository } from '../repositories/CategoriesRepository';
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
+import multer from 'multer';
+import createCategoryController from '../modules/Cars/useCases/createCategory';
+import listCategoriesController from '../modules/Cars/useCases/listCategories';
+import importCategoryController from '../modules/Cars/useCases/importCategory';
 
-const categoriesRoute = Router();
 
-const categoriesRepository = new CategoriesRepository();
+const categoriesRoutes = Router();
 
-categoriesRoute.use(checkExistingCategory);
+const upload = multer({ dest: './tmp' });
 
-categoriesRoute.post('/', (request, response) => {
-    const { category, description } = request.body;
-
-    categoriesRepository.create({ category, description });
-
-    return response.status(201).send();
+categoriesRoutes.post('/', (request, response) => {
+    return createCategoryController.handle(request, response);
 });
 
-categoriesRoute.get('/', (request, response) => {
-    const categories = categoriesRepository.list();
-
-    return response.json(categories);
+categoriesRoutes.get('/', (request, response) => {
+    return listCategoriesController.handle(request, response);
 });
 
-export { categoriesRoute };
+categoriesRoutes.post('/import', upload.single('file'), (request, response) => {
+    return importCategoryController.handle(request, response);
+});
 
-// Middlewares
-
-function checkExistingCategory(request: Request, response: Response, next: NextFunction) {
-    const { category: reqCategory } = request.body;
-
-    const existingCategory = categoriesRepository.findByName(reqCategory);
-
-    if (existingCategory) {
-        return response.status(400).json({ error: 'Bad request: category exists' });
-    }
-
-    next();
-}
+export default categoriesRoutes;
